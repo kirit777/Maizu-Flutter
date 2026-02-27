@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
-import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/game_provider.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import '../widgets/action_buttons.dart';
 import '../widgets/number_pad.dart';
 import '../widgets/stats_bar.dart';
@@ -21,6 +23,8 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
+  bool _resultRouted = false;
 
   @override
   void initState() {
@@ -28,7 +32,13 @@ class _GameScreenState extends State<GameScreen> {
     _bannerAd = BannerAd(
       size: AdSize.banner,
       adUnitId: AdService.bannerAdUnitId,
-      listener: const BannerAdListener(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
+        onAdFailedToLoad: (ad, _) {
+          ad.dispose();
+          _bannerAd = null;
+        },
+      ),
       request: const AdRequest(),
     )..load();
   }
@@ -46,7 +56,11 @@ class _GameScreenState extends State<GameScreen> {
         if (game.board == null) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        if (game.gameWon || game.gameLost) {
+        if ((game.gameWon || game.gameLost) && !_resultRouted) {
+          _resultRouted = true;
+          if (game.gameWon) {
+            unawaited(AudioService.instance.playWin());
+          }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             AdService.showInterstitial(() {
               Navigator.of(context).pushReplacement(
@@ -82,16 +96,44 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                     const SizedBox(height: 12),
                     ActionButtons(
-                      onUndo: game.undo,
-                      onErase: game.eraseCell,
-                      onHint: game.hint,
-                      onNotes: game.toggleNotesMode,
+                      onUndo: () {
+                        unawaited(AudioService.instance.playTap());
+                        game.undo();
+                      },
+                      onErase: () {
+                        unawaited(AudioService.instance.playTap());
+                        game.eraseCell();
+                        unawaited(AudioService.instance.playCorrect());
+                      },
+                      onHint: () {
+                        unawaited(AudioService.instance.playTap());
+                        game.hint();
+                        unawaited(AudioService.instance.playHint());
+                      },
+                      onNotes: () {
+                        unawaited(AudioService.instance.playTap());
+                        game.toggleNotesMode();
+                      },
                       notesEnabled: game.notesMode,
                     ),
                     const SizedBox(height: 10),
-                    NumberPad(onNumber: game.setNumber),
+                    NumberPad(
+                      onNumber: (number) {
+                        final previousMistakes = game.mistakes;
+                        final wasWon = game.gameWon;
+                        unawaited(AudioService.instance.playTap());
+                        game.setNumber(number);
+                        if (game.mistakes > previousMistakes) {
+                          unawaited(AudioService.instance.playWrong());
+                        } else if (!wasWon && game.gameWon) {
+                          unawaited(AudioService.instance.playWin());
+                        } else {
+                          unawaited(AudioService.instance.playCorrect());
+                        }
+                      },
+                    ),
                     const Spacer(),
-                    if (_bannerAd != null)
+                    if (_bannerAd != null && _isBannerLoaded)
                       SizedBox(
                         width: _bannerAd!.size.width.toDouble(),
                         height: _bannerAd!.size.height.toDouble(),

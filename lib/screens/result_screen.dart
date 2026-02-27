@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import '../core/theme.dart';
 import 'game_screen.dart';
 
@@ -58,7 +61,9 @@ class _ResultScreenState extends State<ResultScreen> with SingleTickerProviderSt
                   _StatLine(title: 'Mistakes', value: '${game.mistakes}'),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () => AdService.showInterstitial(() {
+                    onTap: () {
+                      unawaited(AudioService.instance.playTap());
+                      AdService.showInterstitial(() {
                       game.startNewGame(settings.defaultDifficulty);
                       Navigator.of(context).pushReplacement(
                         PageRouteBuilder(
@@ -66,7 +71,8 @@ class _ResultScreenState extends State<ResultScreen> with SingleTickerProviderSt
                           transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
                         ),
                       );
-                    }),
+                    });
+                  },
                     child: Container(
                       height: 54,
                       decoration: BoxDecoration(color: const Color(0xFF12343B), borderRadius: BorderRadius.circular(27)),

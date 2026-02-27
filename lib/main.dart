@@ -7,17 +7,54 @@ import 'providers/game_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/ad_service.dart';
+import 'services/audio_service.dart';
+import 'services/preference_service.dart';
 import 'services/sudoku_generator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MobileAds.instance.initialize();
+  await PreferenceService.init();
+  await AudioService.instance.init(
+    musicEnabled: PreferenceService.musicEnabled,
+    effectsEnabled: PreferenceService.effectsEnabled,
+    volume: PreferenceService.masterVolume,
+  );
   AdService.loadInterstitial();
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AudioService.instance.playBackgroundMusic();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AudioService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      AudioService.instance.pauseBackgroundMusic();
+    }
+    if (state == AppLifecycleState.resumed) {
+      AudioService.instance.playBackgroundMusic();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
