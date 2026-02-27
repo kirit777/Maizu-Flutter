@@ -92,7 +92,7 @@ class SettingsScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     unawaited(AudioService.instance.playTap());
-                    Share.share('Play Maizu Sudoku now!');
+                    SharePlus.instance.share(const ShareParams(text: 'Play Maizu Sudoku now!'));
                   },
                   child: const Text('Share'),
                 ),

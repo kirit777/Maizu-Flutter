@@ -13,14 +13,18 @@ import 'services/sudoku_generator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
+  if (AdService.isSupportedPlatform) {
+    await MobileAds.instance.initialize();
+  }
   await PreferenceService.init();
   await AudioService.instance.init(
     musicEnabled: PreferenceService.musicEnabled,
     effectsEnabled: PreferenceService.effectsEnabled,
     volume: PreferenceService.masterVolume,
   );
-  AdService.loadInterstitial();
+  if (AdService.isSupportedPlatform) {
+    AdService.loadInterstitial();
+  }
   runApp(const MyApp());
 }
 
