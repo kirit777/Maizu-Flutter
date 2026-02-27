@@ -27,18 +27,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     unawaited(AudioService.instance.playBackgroundMusic());
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: AdService.bannerAdUnitId,
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
-        onAdFailedToLoad: (ad, _) {
-          ad.dispose();
-          _bannerAd = null;
-        },
-      ),
-      request: const AdRequest(),
-    )..load();
+    if (AdService.isSupportedPlatform) {
+      _bannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: AdService.bannerAdUnitId,
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
+          onAdFailedToLoad: (ad, _) {
+            ad.dispose();
+            _bannerAd = null;
+          },
+        ),
+        request: const AdRequest(),
+      )..load();
+    }
   }
 
   @override

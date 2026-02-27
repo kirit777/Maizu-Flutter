@@ -29,18 +29,20 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: AdService.bannerAdUnitId,
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
-        onAdFailedToLoad: (ad, _) {
-          ad.dispose();
-          _bannerAd = null;
-        },
-      ),
-      request: const AdRequest(),
-    )..load();
+    if (AdService.isSupportedPlatform) {
+      _bannerAd = BannerAd(
+        size: AdSize.banner,
+        adUnitId: AdService.bannerAdUnitId,
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
+          onAdFailedToLoad: (ad, _) {
+            ad.dispose();
+            _bannerAd = null;
+          },
+        ),
+        request: const AdRequest(),
+      )..load();
+    }
   }
 
   @override
