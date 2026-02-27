@@ -1,22 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
+  AdService._();
+
   static InterstitialAd? _interstitialAd;
 
   static String get bannerAdUnitId {
-    if (kDebugMode) return BannerAd.testAdUnitId;
-    if (Platform.isAndroid) return 'ca-app-pub-xxxxxxxxxxxxxxxx/banner_android';
-    return 'ca-app-pub-xxxxxxxxxxxxxxxx/banner_ios';
+    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/6300978111';
+    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/2934735716';
+    return BannerAd.testAdUnitId;
   }
 
   static String get interstitialAdUnitId {
-    if (kDebugMode) return InterstitialAd.testAdUnitId;
-    if (Platform.isAndroid) return 'ca-app-pub-xxxxxxxxxxxxxxxx/interstitial_android';
-    return 'ca-app-pub-xxxxxxxxxxxxxxxx/interstitial_ios';
+    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/1033173712';
+    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/4411468910';
+    return InterstitialAd.testAdUnitId;
   }
 
   static void loadInterstitial() {
@@ -24,10 +25,11 @@ class AdService {
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _interstitialAd = ad;
-        },
-        onAdFailedToLoad: (_) {
+        onAdLoaded: (ad) => _interstitialAd = ad,
+        onAdFailedToLoad: (error) {
+          if (kDebugMode) {
+            debugPrint('Interstitial load failed: ${error.message}');
+          }
           _interstitialAd = null;
         },
       ),
@@ -49,7 +51,10 @@ class AdService {
         loadInterstitial();
         onComplete();
       },
-      onAdFailedToShowFullScreenContent: (ad, _) {
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        if (kDebugMode) {
+          debugPrint('Interstitial show failed: ${error.message}');
+        }
         ad.dispose();
         _interstitialAd = null;
         loadInterstitial();

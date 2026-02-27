@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
-import '../core/constants.dart';
 import '../core/theme.dart';
 import '../providers/game_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
 
@@ -19,14 +21,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    unawaited(AudioService.instance.playBackgroundMusic());
     _bannerAd = BannerAd(
       size: AdSize.banner,
       adUnitId: AdService.bannerAdUnitId,
-      listener: const BannerAdListener(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => _isBannerLoaded = true),
+        onAdFailedToLoad: (ad, _) {
+          ad.dispose();
+          _bannerAd = null;
+        },
+      ),
       request: const AdRequest(),
     )..load();
   }
@@ -55,23 +65,32 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
                 _MenuButton(
                   label: 'PLAY',
-                  onTap: () => AdService.showInterstitial(() {
-                    context.read<GameProvider>().startNewGame(settings.defaultDifficulty);
-                    Navigator.of(context).push(_fadeRoute(const GameScreen()));
-                  }),
+                  onTap: () {
+                    unawaited(AudioService.instance.playTap());
+                    AdService.showInterstitial(() {
+                      context.read<GameProvider>().startNewGame(settings.defaultDifficulty);
+                      Navigator.of(context).push(_fadeRoute(const GameScreen()));
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
                 _MenuButton(
                   label: 'ACHIEVEMENTS',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Achievements coming soon'))),
+                  onTap: () {
+                    unawaited(AudioService.instance.playTap());
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Achievements coming soon')));
+                  },
                 ),
                 const SizedBox(height: 16),
                 _MenuButton(
                   label: 'SETTINGS',
-                  onTap: () => Navigator.of(context).push(_fadeRoute(const SettingsScreen())),
+                  onTap: () {
+                    unawaited(AudioService.instance.playTap());
+                    Navigator.of(context).push(_fadeRoute(const SettingsScreen()));
+                  },
                 ),
                 const Spacer(),
-                if (_bannerAd != null)
+                if (_bannerAd != null && _isBannerLoaded)
                   Center(
                     child: SizedBox(
                       width: _bannerAd!.size.width.toDouble(),
